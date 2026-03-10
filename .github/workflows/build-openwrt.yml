@@ -21,10 +21,10 @@ jobs:
       run: |
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
         sudo docker image prune --all --force
-        sudo fallocate -l 8G /swapfile
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile
-        sudo swapon /swapfile
+        sudo fallocate -l 8G /builder-swapfile
+        sudo chmod 600 /builder-swapfile
+        sudo mkswap /builder-swapfile
+        sudo swapon /builder-swapfile
         echo "Memory and Swap Status:"
         free -h
 
