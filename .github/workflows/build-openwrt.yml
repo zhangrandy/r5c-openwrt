@@ -1,0 +1,128 @@
+name: Build OpenWrt 25.12.0 for NanoPi R5C (Custom)
+
+on:
+  workflow_dispatch:
+
+env:
+  REPO_URL: https://github.com/openwrt/openwrt
+  REPO_BRANCH: v25.12.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required for creating a GitHub Release
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Free Disk Space
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+
+    - name: Initialize Environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev python3-distutils rsync unzip zlib1g-dev file wget
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+
+    - name: Clone OpenWrt Source
+      run: |
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
+
+    - name: Add Custom Feeds (Passwall)
+      run: |
+        cd openwrt
+        echo "src-git passwall_packages https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git;main" >> feeds.conf.default
+        echo "src-git passwall_luci https://github.com/Openwrt-Passwall/openwrt-passwall.git;main" >> feeds.conf.default
+
+    - name: Update and Install Feeds
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Configure Network Settings (uci-defaults)
+      run: |
+        mkdir -p openwrt/files/etc/uci-defaults
+        cat << 'EOF' > openwrt/files/etc/uci-defaults/99-custom-network
+        #!/bin/sh
+        # Set custom LAN IP with CIDR notation, Gateway, and DNS
+        uci set network.lan.ipaddr='192.168.1.4/24'
+        uci delete network.lan.netmask || true
+        uci set network.lan.gateway='192.168.1.1'
+        uci del_list network.lan.dns='192.168.1.1' || true
+        uci add_list network.lan.dns='192.168.1.1'
+        uci commit network
+        EOF
+        chmod +x openwrt/files/etc/uci-defaults/99-custom-network
+
+    - name: Generate Configuration
+      run: |
+        cd openwrt
+        
+        # 1. Target Settings
+        echo "CONFIG_TARGET_rockchip=y" > .config
+        echo "CONFIG_TARGET_rockchip_armv8=y" >> .config
+        echo "CONFIG_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5c=y" >> .config
+        
+        # 2. Storage & Filesystem Settings (2GB RootFS, Squashfs only)
+        echo "CONFIG_TARGET_ROOTFS_PARTSIZE=2048" >> .config
+        echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
+        echo "# CONFIG_TARGET_ROOTFS_EXT4 is not set" >> .config
+        
+        # 3. Custom Packages
+        echo "CONFIG_PACKAGE_tcping=y" >> .config
+        echo "CONFIG_PACKAGE_chinadns-ng=y" >> .config
+        echo "CONFIG_PACKAGE_dns2socks=y" >> .config
+        echo "CONFIG_PACKAGE_luci-app-passwall=y" >> .config
+        
+        # Expand the minimal config
+        make defconfig
+
+    - name: Download Dependencies
+      run: |
+        cd openwrt
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+
+    - name: Compile Firmware
+      id: compile
+      run: |
+        cd openwrt
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 || make -j1 V=s
+
+    - name: Prepare Artifacts
+      id: organize
+      run: |
+        cd openwrt/bin/targets/rockchip/armv8
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+
+    - name: Generate Release Tag
+      id: tag
+      run: |
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_ENV
+        echo "release_date=$(date +"%Y-%m-%d")" >> $GITHUB_ENV
+
+    - name: Upload Firmware to GitHub Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: OpenWrt_25.12.0_NanoPi_R5C_Passwall
+        path: ${{ env.FIRMWARE }}/*squashfs*
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ env.release_tag }}
+        name: OpenWrt 25.12.0 NanoPi R5C - ${{ env.release_date }}
+        files: ${{ env.FIRMWARE }}/*squashfs*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
