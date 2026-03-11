@@ -109,19 +109,3 @@ EOF
 chmod +x /usr/bin/echolog
 ```
 
-### 3. Missing CPU Temperature in LuCI
-Vanilla OpenWrt does not include customized thermal UI injections like Lean's LEDE. To get CPU load and SoC temperature on your LuCI Overview page, manually install `gSpotx2f`'s widgets.
-
-*(The `lm-sensors` backend is already baked into this firmware).*
-```bash
-# Install CPU Status Widget
-wget --no-check-certificate -O /tmp/luci-app-cpu.apk https://github.com/gSpotx2f/packages-openwrt/raw/master/25.12/luci-app-cpu-status-0.6.2-r1.apk
-apk --allow-untrusted add /tmp/luci-app-cpu.apk
-
-# Install Temp Status Widget
-wget --no-check-certificate -O /tmp/luci-app-temp.apk https://github.com/gSpotx2f/packages-openwrt/raw/master/25.12/luci-app-temp-status-0.8.0-r1.apk
-apk --allow-untrusted add /tmp/luci-app-temp.apk
-
-rm /tmp/*.apk
-service rpcd reload
-```
