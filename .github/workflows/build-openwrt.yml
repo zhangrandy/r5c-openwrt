@@ -94,10 +94,27 @@ jobs:
         echo "CONFIG_PACKAGE_blkid=y" >> .config
         echo "CONFIG_PACKAGE_util-linux-lsblk=y" >> .config        
         echo "CONFIG_PACKAGE_partx-utils=y" >> .config
-
-        # Tools for manual package management over SSH
+        
+        # Daily driver utilities (Downloading, Editing, Monitoring)
+        echo "CONFIG_PACKAGE_curl=y" >> .config
+        echo "CONFIG_PACKAGE_ca-certificates=y" >> .config
         echo "CONFIG_PACKAGE_unzip=y" >> .config
-        echo "CONFIG_PACKAGE_ca-certificates=y" >> .config        
+        echo "CONFIG_PACKAGE_nano=y" >> .config
+        echo "CONFIG_PACKAGE_htop=y" >> .config
+        echo "CONFIG_PACKAGE_openssh-sftp-server=y" >> .config     
+        
+        # Swap default DNS for dnsmasq-full (Required by Passwall)
+        echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
+        echo "# CONFIG_PACKAGE_dnsmasq is not set" >> .config
+
+        # Passwall Kernel & Networking Dependencies
+        echo "CONFIG_PACKAGE_kmod-nf-conntrack-netlink=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-nft-tproxy=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+        echo "CONFIG_PACKAGE_ipset=y" >> .config
+        echo "CONFIG_PACKAGE_ip-full=y" >> .config
+        echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
+        echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y" >> .config        
         
         make defconfig
 
