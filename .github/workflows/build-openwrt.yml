@@ -103,18 +103,26 @@ jobs:
         echo "CONFIG_PACKAGE_htop=y" >> .config
         echo "CONFIG_PACKAGE_openssh-sftp-server=y" >> .config     
         
-        # Swap default DNS for dnsmasq-full (Required by Passwall)
+        # Swap default DNS for dnsmasq-full (Strictly required by Passwall)
         echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
         echo "# CONFIG_PACKAGE_dnsmasq is not set" >> .config
 
-        # Passwall Kernel & Networking Dependencies
+        # Passwall Core Kernel Modules (Must be baked into the firmware)
         echo "CONFIG_PACKAGE_kmod-nf-conntrack-netlink=y" >> .config
         echo "CONFIG_PACKAGE_kmod-nft-tproxy=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-nft-socket=y" >> .config
         echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-netlink-diag=y" >> .config
+
+        # Network Routing & Firewall Compatibility Utilities
         echo "CONFIG_PACKAGE_ipset=y" >> .config
         echo "CONFIG_PACKAGE_ip-full=y" >> .config
+        echo "CONFIG_PACKAGE_iptables-nft=y" >> .config
         echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y" >> .config        
+        echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y" >> .config
+        echo "CONFIG_PACKAGE_iptables-mod-socket=y" >> .config
+        echo "CONFIG_PACKAGE_iptables-mod-ipopt=y" >> .config        
         
         make defconfig
 
