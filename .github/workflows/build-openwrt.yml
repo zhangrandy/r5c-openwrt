@@ -1,11 +1,12 @@
-name: Build OpenWrt 25.12.0 for NanoPi R5C
+name: Build OpenWrt 25.12.x for NanoPi R5C
 
 on:
   workflow_dispatch:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: v25.12.0
+  # Update this branch variable for future point upgrades (e.g., v25.12.5)
+  REPO_BRANCH: v25.12.0 
 
 jobs:
   build:
@@ -47,17 +48,22 @@ jobs:
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
-    - name: Configure Network Settings (uci-defaults)
+    - name: Configure Transparent Network Settings (uci-defaults)
       run: |
         mkdir -p openwrt/files/etc/uci-defaults
         cat << 'EOF' > openwrt/files/etc/uci-defaults/99-custom-network
         #!/bin/sh
+        # Setup static IP, Gateway, and DNS
         uci set network.lan.ipaddr='192.168.1.4/24'
         uci delete network.lan.netmask || true
         uci set network.lan.gateway='192.168.1.1'
         uci del_list network.lan.dns='192.168.1.1' || true
         uci add_list network.lan.dns='192.168.1.1'
         uci commit network
+        
+        # Disable DHCP server for transparent router mode
+        uci set dhcp.lan.ignore='1'
+        uci commit dhcp
         EOF
         chmod +x openwrt/files/etc/uci-defaults/99-custom-network
 
@@ -69,9 +75,19 @@ jobs:
         echo "CONFIG_TARGET_rockchip_armv8=y" >> .config
         echo "CONFIG_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5c=y" >> .config
         
-        echo "CONFIG_TARGET_ROOTFS_PARTSIZE=2048" >> .config
+        # Set 4GB RootFS and enforce SquashFS
+        echo "CONFIG_TARGET_ROOTFS_PARTSIZE=4096" >> .config
         echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
         echo "# CONFIG_TARGET_ROOTFS_EXT4 is not set" >> .config
+        
+        # Core disk utilities for manual partitioning and mounting
+        echo "CONFIG_PACKAGE_block-mount=y" >> .config
+        echo "CONFIG_PACKAGE_fdisk=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-fs-ext4=y" >> .config
+        echo "CONFIG_PACKAGE_e2fsprogs=y" >> .config
+        echo "CONFIG_PACKAGE_sgdisk=y" >> .config
+        echo "CONFIG_PACKAGE_blkid=y" >> .config
+        echo "CONFIG_PACKAGE_partx-utils=y" >> .config
         
         make defconfig
 
@@ -106,14 +122,14 @@ jobs:
     - name: Upload Firmware to GitHub Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: OpenWrt_25.12.0_NanoPi_R5C_Base
+        name: OpenWrt_25.12.x_NanoPi_R5C_Base
         path: ${{ env.FIRMWARE }}/*squashfs*
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.release_tag }}
-        name: OpenWrt 25.12.0 NanoPi R5C - ${{ env.release_date }}
+        name: OpenWrt 25.12.x NanoPi R5C - ${{ env.release_date }}
         files: ${{ env.FIRMWARE }}/*squashfs*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
