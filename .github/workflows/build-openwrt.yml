@@ -82,6 +82,7 @@ jobs:
         
         # Include Web UI and Bash to prevent post-flash lockouts
         echo "CONFIG_PACKAGE_luci=y" >> .config
+        echo "CONFIG_LUCI_LANG_zh_cn=y" >> .config
         echo "CONFIG_PACKAGE_luci-i18n-base-zh-cn=y" >> .config
         echo "CONFIG_PACKAGE_bash=y" >> .config       
         
@@ -92,7 +93,7 @@ jobs:
         echo "CONFIG_PACKAGE_e2fsprogs=y" >> .config
         echo "CONFIG_PACKAGE_sgdisk=y" >> .config
         echo "CONFIG_PACKAGE_blkid=y" >> .config
-        echo "CONFIG_PACKAGE_util-linux-lsblk=y" >> .config        
+        echo "CONFIG_PACKAGE_lsblk=y" >> .config        
         echo "CONFIG_PACKAGE_partx-utils=y" >> .config
         
         # Daily driver utilities (Downloading, Editing, Monitoring)
