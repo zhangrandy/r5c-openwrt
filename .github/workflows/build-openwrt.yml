@@ -82,6 +82,7 @@ jobs:
         
         # Include Web UI and Bash to prevent post-flash lockouts
         echo "CONFIG_PACKAGE_luci=y" >> .config
+        echo "CONFIG_PACKAGE_luci-i18n-base-zh-cn=y" >> .config
         echo "CONFIG_PACKAGE_bash=y" >> .config       
         
         # Core disk utilities for manual partitioning and mounting
