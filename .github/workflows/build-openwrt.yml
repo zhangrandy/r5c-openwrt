@@ -80,8 +80,9 @@ jobs:
         echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
         echo "# CONFIG_TARGET_ROOTFS_EXT4 is not set" >> .config
         
-        # Include the Web UI (This prevents the ERR_CONNECTION_REFUSED next time)
-        echo "CONFIG_PACKAGE_luci=y" >> .config        
+        # Include Web UI and Bash to prevent post-flash lockouts
+        echo "CONFIG_PACKAGE_luci=y" >> .config
+        echo "CONFIG_PACKAGE_bash=y" >> .config       
         
         # Core disk utilities for manual partitioning and mounting
         echo "CONFIG_PACKAGE_block-mount=y" >> .config
