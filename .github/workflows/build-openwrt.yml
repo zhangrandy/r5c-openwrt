@@ -91,6 +91,7 @@ jobs:
         echo "CONFIG_PACKAGE_e2fsprogs=y" >> .config
         echo "CONFIG_PACKAGE_sgdisk=y" >> .config
         echo "CONFIG_PACKAGE_blkid=y" >> .config
+        echo "CONFIG_PACKAGE_lsblk=y" >> .config        
         echo "CONFIG_PACKAGE_partx-utils=y" >> .config
         
         make defconfig
