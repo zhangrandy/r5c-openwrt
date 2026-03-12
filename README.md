@@ -36,7 +36,7 @@ Because this is a fresh installation, we will use FriendlyElec's official SD-to-
 3. Copy your newly compiled custom OpenWrt `.img.gz` file directly into this `FriendlyARM` drive. *(Note: If your file ends in just `.img`, rename it to `.raw`).*
 4. Open the `eflasher.conf` file on the MicroSD card using a text editor. Change the `autoStart=` line to exactly match your firmware filename. For example:
    `autoStart=openwrt-rockchip-armv8-friendlyelec_nanopi-r5c-ext4-sysupgrade.img.gz`
-5. Safely eject the MicroSD card, insert it into your powered-off NanoPi R5C, and plug in the power. The router will automatically flash the firmware to the internal eMMC. Watch the onboard LEDs to monitor the progress. Once complete, power off the device, remove the SD card, and boot from the internal eMMC.
+5. Safely eject the MicroSD card and insert it into your powered-off NanoPi R5C. **Important:** If there is already a system on the eMMC (which defaults to booting first), you must force the router to boot from the SD card. Use a paperclip to press and hold the **MASK** button, plug in the power, count to 3 seconds, and then release the MASK button. The router will now boot from the SD card and automatically copy the system over to the internal eMMC. Watch the onboard LEDs to monitor the progress. Once complete, power off the device, remove the SD card, and boot normally from the internal eMMC.
 
 **Phase 2: Reclaim the 24GB eMMC Storage**
 Do not touch the 4GB `p2` system partition. We will only create `p3`.
