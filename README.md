@@ -93,7 +93,7 @@ cd /mnt/data/passwall_installer
 
 **Step 2: Download Dependencies & Cores**
 Download the following specific architecture (`aarch64_generic`) `.apk` files directly to your workspace. 
-* *Note: Use `curl -L -o filename.apk "URL"` or transfer them via SFTP/SCP.*
+* *Note: Use `curl -OJL "URL"` or transfer them via SFTP/SCP.*
 
 * **From SourceForge (openwrt-passwall-build/files):** [Link](https://sourceforge.net/projects/openwrt-passwall-build/files/)
   * `tcping`
