@@ -123,7 +123,12 @@ jobs:
         echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
         echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y" >> .config
         echo "CONFIG_PACKAGE_iptables-mod-socket=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-mod-ipopt=y" >> .config        
+        echo "CONFIG_PACKAGE_iptables-mod-ipopt=y" >> .config   
+
+        # Inject VRRP High Availability dependencies directly into the build
+        echo "CONFIG_PACKAGE_keepalived=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-macvlan=y" >> .config
+        echo "CONFIG_PACKAGE_kmod-nf-ipvs=y" >> .config
         
         make defconfig
 
