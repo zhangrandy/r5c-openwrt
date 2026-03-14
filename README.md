@@ -81,57 +81,9 @@ df -h
 
 ---
 
-## 📦 Installing Passwall (Granular Offline Method)
+~~📦 Installing Passwall (Granular Offline Method)~~
 
-To avoid broken dependency loops and missing index files (`Error 8` / 404) from third-party repositories, install Passwall manually by pulling the specific `.apk` packages directly to your `/mnt/data` partition.
-
-**Step 1: Create a Workspace**
-```bash
-mkdir -p /mnt/data/passwall_installer
-cd /mnt/data/passwall_installer
-```
-
-**Step 2: Download Dependencies & Cores**
-Download the following specific architecture (`aarch64_generic`) `.apk` files directly to your workspace. 
-* *Note: Use `curl -OJL "URL"` or transfer them via SFTP/SCP.*
-
-* **From SourceForge (openwrt-passwall-build/files):** [Link](https://sourceforge.net/projects/openwrt-passwall-build/files/)
-  * `tcping`
-  * `dns2socks`
-  * `chinadns-ng`
-  * `xray-core`
-  * `geoview`
-  * `hysteria`
-  * `sing-box`
-
-* **From GitHub Releases (Openwrt-Passwall):** [Link](https://github.com/Openwrt-Passwall/openwrt-passwall/releases)
-  * `luci-app-passwall`
-  * `luci-i18n-passwall-zh-cn`
-
-**Step 3: Install Dependencies First, Then Passwall**
-Because Passwall relies on specific core networking tools, you must install its dependencies first before installing the main application and proxy cores. Execute the following in your workspace:
-
-```bash
-apk update
-
-# 1. Install required dependencies first
-apk add --allow-untrusted ./tcping*.apk ./dns2socks*.apk ./chinadns-ng*.apk
-
-# 2. Install Passwall, its UI/translation, and the remaining proxy cores
-apk add --allow-untrusted ./*.apk
-```
-
-**Step 4: Restore Passwall Backup**
-Once the packages install, log into the LuCI web interface, navigate to the Passwall menu, and **restore your Passwall configuration backup**. 
-* *Crucial Fix:* Restoring a known-good backup completely bypasses Passwall's internal scripting bugs, including the infamous `nohup: failed to run command 'echolog': No such file or directory` error that occurs when configuring Xray load balancing from scratch.
-
-**Step 5: Clean up**
-```bash
-cd /mnt/data
-rm -rf passwall_installer
-```
-
----
+## Including: Passwall, Xray-core, Sing-box, Hysteria2
 
 ## 🛠️ Known Quirks & Fixes
 
