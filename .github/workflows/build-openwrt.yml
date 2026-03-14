@@ -1,12 +1,11 @@
-name: Build OpenWrt 25.12.x for NanoPi R5C
+name: Build OpenWrt 25.12.0 for NanoPi R5C (Passwall Edition)
 
 on:
   workflow_dispatch:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  # Update this branch variable for future point upgrades (e.g., v25.12.5)
-  REPO_BRANCH: v25.12.0 
+  REPO_BRANCH: v25.12.0
 
 jobs:
   build:
@@ -29,12 +28,18 @@ jobs:
         echo "Memory and Swap Status:"
         free -h
 
-    - name: Initialize Environment (Comprehensive)
+    - name: Initialize Environment (Modern Dependencies)
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
         sudo -E apt-get -qq update
-        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libreadline-dev libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python3 python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev
+        sudo -E apt-get -qq install ack antlr3 aria2 asciidoc autoconf automake autopoint binutils bison build-essential \
+        bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib \
+        git gperf haveged help2man intltool libc6-dev-i386 libelf-dev libfuse-dev libglib2.0-dev libgmp3-dev \
+        libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libpython3-dev libreadline-dev \
+        libssl-dev libtool lrzsz mkisofs msmtp ninja-build p7zip p7zip-full patch pkgconf python2.7 python3 \
+        python3-pyelftools python3-setuptools qemu-utils rsync scons squashfs-tools subversion swig texinfo \
+        uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd dos2unix nodejs npm jq
         sudo -E apt-get -qq autoremove --purge
         sudo -E apt-get -qq clean
 
@@ -42,18 +47,34 @@ jobs:
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
-    - name: Update and Install Feeds
+    - name: Update and Install Base Feeds
       run: |
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
 
+    - name: Inject Official Passwall Feeds (Method 2)
+      run: |
+        cd openwrt
+        
+        # Nuke conflicting/outdated proxy packages from default feeds
+        rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
+        rm -rf feeds/luci/applications/luci-app-passwall
+        
+        # Clone bleeding-edge official Passwall repositories
+        git clone https://github.com/Openwrt-Passwall/openwrt-passwall-packages package/passwall-packages
+        git clone https://github.com/Openwrt-Passwall/openwrt-passwall package/passwall-luci
+        
+        # Re-index the system
+        ./scripts/feeds update -i
+        ./scripts/feeds install -a
+
     - name: Configure Transparent Network Settings (uci-defaults)
       run: |
-        mkdir -p openwrt/files/etc/uci-defaults
-        cat << 'EOF' > openwrt/files/etc/uci-defaults/99-custom-network
+        mkdir -p openwrt/package/base-files/files/etc/uci-defaults
+        cat << 'EOF' > openwrt/package/base-files/files/etc/uci-defaults/99-custom-network
         #!/bin/sh
-        # Setup static IP, Gateway, and DNS
+        # Setup static IP, Gateway, and DNS for R5C Master Node
         uci set network.lan.ipaddr='192.168.1.4/24'
         uci delete network.lan.netmask || true
         uci set network.lan.gateway='192.168.1.1'
@@ -64,72 +85,22 @@ jobs:
         # Disable DHCP server for transparent router mode
         uci set dhcp.lan.ignore='1'
         uci commit dhcp
+        
         EOF
-        chmod +x openwrt/files/etc/uci-defaults/99-custom-network
+        chmod +x openwrt/package/base-files/files/etc/uci-defaults/99-custom-network
 
-    - name: Generate Configuration
+    - name: Load Custom Configuration
       run: |
-        cd openwrt
+        # Pulls your uploaded .config from the repository root
+        if [ -f "$GITHUB_WORKSPACE/.config" ]; then
+          cp $GITHUB_WORKSPACE/.config $GITHUB_WORKSPACE/openwrt/.config
+          echo "Custom .config loaded successfully."
+        else
+          echo "Error: No .config file found in the root of your repository!"
+          exit 1
+        fi
         
-        echo "CONFIG_TARGET_rockchip=y" > .config
-        echo "CONFIG_TARGET_rockchip_armv8=y" >> .config
-        echo "CONFIG_TARGET_rockchip_armv8_DEVICE_friendlyarm_nanopi-r5c=y" >> .config
-        
-        # Set 4GB RootFS and enforce SquashFS
-        echo "CONFIG_TARGET_ROOTFS_PARTSIZE=4096" >> .config
-        echo "CONFIG_TARGET_ROOTFS_SQUASHFS=y" >> .config
-        echo "# CONFIG_TARGET_ROOTFS_EXT4 is not set" >> .config
-        
-        # Include Web UI and Bash to prevent post-flash lockouts
-        echo "CONFIG_PACKAGE_luci=y" >> .config
-        echo "CONFIG_LUCI_LANG_zh_Hans=y" >> .config
-        echo "CONFIG_PACKAGE_luci-i18n-base-zh-cn=y" >> .config
-        echo "CONFIG_PACKAGE_bash=y" >> .config       
-        
-        # Core disk utilities for manual partitioning and mounting
-        echo "CONFIG_PACKAGE_block-mount=y" >> .config
-        echo "CONFIG_PACKAGE_fdisk=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-fs-ext4=y" >> .config
-        echo "CONFIG_PACKAGE_e2fsprogs=y" >> .config
-        echo "CONFIG_PACKAGE_sgdisk=y" >> .config
-        echo "CONFIG_PACKAGE_blkid=y" >> .config
-        echo "CONFIG_PACKAGE_lsblk=y" >> .config        
-        echo "CONFIG_PACKAGE_partx-utils=y" >> .config
-        
-        # Daily driver utilities (Downloading, Editing, Monitoring)
-        echo "CONFIG_PACKAGE_curl=y" >> .config
-        echo "CONFIG_PACKAGE_ca-certificates=y" >> .config
-        echo "CONFIG_PACKAGE_unzip=y" >> .config
-        echo "CONFIG_PACKAGE_nano=y" >> .config
-        echo "CONFIG_PACKAGE_htop=y" >> .config
-        echo "CONFIG_PACKAGE_openssh-sftp-server=y" >> .config     
-        
-        # Swap default DNS for dnsmasq-full (Strictly required by Passwall)
-        echo "CONFIG_PACKAGE_dnsmasq-full=y" >> .config
-        echo "# CONFIG_PACKAGE_dnsmasq is not set" >> .config
-
-        # Passwall Core Kernel Modules (Must be baked into the firmware)
-        echo "CONFIG_PACKAGE_kmod-nf-conntrack-netlink=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-nft-tproxy=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-nft-socket=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-tun=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-inet-diag=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-netlink-diag=y" >> .config
-
-        # Network Routing & Firewall Compatibility Utilities
-        echo "CONFIG_PACKAGE_ipset=y" >> .config
-        echo "CONFIG_PACKAGE_ip-full=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-nft=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-mod-tproxy=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-mod-conntrack-extra=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-mod-socket=y" >> .config
-        echo "CONFIG_PACKAGE_iptables-mod-ipopt=y" >> .config   
-
-        # Inject VRRP High Availability dependencies directly into the build
-        echo "CONFIG_PACKAGE_keepalived=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-macvlan=y" >> .config
-        echo "CONFIG_PACKAGE_kmod-nf-ipvs=y" >> .config
-        
+        cd $GITHUB_WORKSPACE/openwrt
         make defconfig
 
     - name: Download Dependencies
@@ -163,14 +134,14 @@ jobs:
     - name: Upload Firmware to GitHub Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: OpenWrt_25.12.x_NanoPi_R5C_Base
+        name: OpenWrt_25.12.0_R5C_Passwall
         path: ${{ env.FIRMWARE }}/*squashfs*
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.release_tag }}
-        name: OpenWrt 25.12.x NanoPi R5C - ${{ env.release_date }}
+        name: OpenWrt 25.12.0 NanoPi R5C (Passwall + VRRP) - ${{ env.release_date }}
         files: ${{ env.FIRMWARE }}/*squashfs*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
