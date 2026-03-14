@@ -85,8 +85,8 @@ jobs:
         # Disable DHCP server for transparent router mode
         uci set dhcp.lan.ignore='1'
         uci commit dhcp
-        
         EOF
+        
         chmod +x openwrt/package/base-files/files/etc/uci-defaults/99-custom-network
 
     - name: Load Custom Configuration
