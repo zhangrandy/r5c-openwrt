@@ -5,7 +5,7 @@ on:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: v25.12.0
+  REPO_BRANCH: v25.12.1
 
 jobs:
   build:
@@ -134,14 +134,14 @@ jobs:
     - name: Upload Firmware to GitHub Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: OpenWrt_25.12.0_R5C_Passwall
+        name: OpenWrt_25.12.1_R5C_Passwall
         path: ${{ env.FIRMWARE }}/*squashfs*
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.release_tag }}
-        name: OpenWrt 25.12.0 NanoPi R5C (Passwall + VRRP) - ${{ env.release_date }}
+        name: OpenWrt 25.12.1 NanoPi R5C (Passwall + VRRP) - ${{ env.release_date }}
         files: ${{ env.FIRMWARE }}/*squashfs*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
