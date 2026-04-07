@@ -1,11 +1,11 @@
-name: Build OpenWrt 25.12.0 for NanoPi R5C (Passwall Edition)
+name: Build OpenWrt 25.12.* for NanoPi R5C (Passwall Edition)
 
 on:
   workflow_dispatch:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: v25.12.1
+  REPO_BRANCH: v25.12.2
 
 jobs:
   build:
